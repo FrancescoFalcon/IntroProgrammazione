@@ -29,8 +29,7 @@ class CSVTimeSeriesFile(CSVFile):
             time_series = []
             my_file = open(self.name, 'r')
             for line in my_file:
-                elements = line.split(',')                                                   #divido in 2 liste: una contentente la data, una contentente i passeggeri
-            
+                elements = line.split(',')                                                   #divido in 2 liste: una contentente la data, una contentente i passeggeri       
                 if elements[0] != 'date':                                                    #non riporto l'intestazione
                     time_series.append(elements)
 
@@ -39,7 +38,7 @@ class CSVTimeSeriesFile(CSVFile):
             try:
                 time_series.append([str(line[0]), int(line[1])])                             #controllo che i dati siano di tipo valido, in caso contrario elimino
             except ValueError:
-                my_file.remove(line)
+                pass
 
         my_file.close()
 
@@ -59,6 +58,7 @@ class CSVTimeSeriesFile(CSVFile):
             if time_series[line][1] < 0:
                 time_series.remove(line)               
 
+        anni_zero_mesi_uno = []
         for line in time_series[line][0]:                                                    #separo anni dai mesi
             anni_zero_mesi_uno = line.split('-',1)
 
@@ -74,13 +74,13 @@ class CSVTimeSeriesFile(CSVFile):
             if anni_zero_mesi_uno[line+1][0] <= anni_zero_mesi_uno[line][0]:
                 raise ValueError("Anni fuori ordine")
 
-        tmp = 0
+        tmp = 1
         for line in range(len(anni_zero_mesi_uno)-1):                                        #controllo che non ci siano mesi duplicati
             while anni_zero_mesi_uno[line][0] == anni_zero_mesi_uno[line+1][0]:
                 tmp +=1
             if tmp > 12:
                 raise ExamException("Ci sono mesi duplicati")
-            tmp = 0
+            tmp = 1
 
         for line in anni_zero_mesi_uno:                                                      #controllo che i mesi siano in ordine crescente
             if anni_zero_mesi_uno[line][0] == anni_zero_mesi_uno[line+1][0]:
@@ -111,6 +111,7 @@ def detect_similar_monthly_variations(time_series, years):
     if abs(years[0]-years[1]) != 1:                                                         #controllo che gli anni siano consecutivi
         raise ExamException("I due anni non sono consecutivi")
 
+    anni_zero_mesi_uno = []
     for line in time_series[line][0]:
         anni_zero_mesi_uno = line.split('-',1)
     
@@ -121,40 +122,44 @@ def detect_similar_monthly_variations(time_series, years):
     if count1 or count2 == 0:
         raise ExamException("Gli anni inseriti non sono presenti nella timeseries")
 
+    conta1 = 1
+    conta2 = 1
+    for line in anni_zero_mesi_uno:                                                         #conto quanti elementi deve avere il risultato, in caso ci siano meno di 12 mesi
+        if line == years[0]:
+            if anni_zero_mesi_uno[line][0] == anni_zero_mesi_uno[line + 1][0]:
+                conta1 +=1
+
+    for line in anni_zero_mesi_uno:
+        if line == years[1]:
+            if anni_zero_mesi_uno[line][0] == anni_zero_mesi_uno[line + 1][0]:
+                conta2 +=1
 
     membro1 = []
     membro2 = []
     for line in anni_zero_mesi_uno[0]:                                                      #creo una lista con i passeggeri del primo anno
         if years[0] == line:
-            for item in range(0, 11):
+            for item in range(0, len(min(conta1,conta2))-2):
                 membro1.append(time_series[item][1])
             break
 
     for line in anni_zero_mesi_uno[0]:                                                      #creo una lista con i passeggeri del secondo anno
         if years[1] == line:
-            for item in range(0,11):
+            for item in range(0,len(min(conta1,conta2))-2):
                 membro2.append(time_series[item][1])
             break   
 
     differenza_passeggeri1 = []
     differenza_passeggeri2 = []
-                                                                                            #inserisco nella lista la differenza tra i passeggeri
-    for element in range (len(membro1)-1):                                                  #se vengono inseriti valori nulli o minori di 0 li tratto come un None
-        if (membro2[element]) == None or (membro2[element+1] == None) or (membro2[element])< 0  or (membro2[element+1] < 0) :    
-            differenza_passeggeri1.append(None)
-        else:
+ 
+    for element in range (len(membro1)-2):                                                 #inserisco nella lista la differenza tra i passeggeri
             differenza_passeggeri1.append(membro1[element]-membro1[element+1])
 
     for element in range (len(membro2)-1):
-        if (membro2[element]) == None or (membro2[element+1] == None):
-            differenza_passeggeri2.append(None)
-        else:
             differenza_passeggeri2.append(membro2[element]-membro2[element+1])
 
     result = []
-
     for element in membro1:                                                                 #se uno dei membri considerati è none o la differenza è maggiore di 2 metto false
-        if (abs(membro1[element] - membro2[element]) >= 2) or (membro1[element] == None ) or (membro2[element] == None):
+        if (abs(membro1[element] - membro2[element]) >= 2):
             result.append(False)
         else:
             result.append(True)            
