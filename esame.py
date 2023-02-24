@@ -20,19 +20,16 @@ class CSVTimeSeriesFile(CSVFile):
         try:
             my_file = open(self.name, 'r')
             my_file.readline()
-        except ExamException as e: 
-            leggibile = False
-            print('Il file non è leggibile: "{}"'.format(e))                                 #se non è utilizzabile alzo un eccezione
-            return None
-
-        if leggibile:
             time_series = []
             my_file = open(self.name, 'r')
             for line in my_file:
                 elements = line.split(',')                                                   #divido in 2 liste: una contentente la data, una contentente i passeggeri       
                 if elements[0] != 'date':                                                    #non riporto l'intestazione
                     time_series.append(elements)
-
+        except ExamException as e: 
+            leggibile = False
+            print('Il file non è leggibile: "{}"'.format(e))                                 #se non è utilizzabile alzo un eccezione
+            return None
 
         for line in my_file:
             try:
@@ -115,9 +112,8 @@ def detect_similar_monthly_variations(time_series, years):
     for line in time_series[line][0]:
         anni_zero_mesi_uno = line.split('-',1)
     
-    for line in anni_zero_mesi_uno:                                                         #controllo che gli anni richiesti siano presenti in time_series
-        count1= anni_zero_mesi_uno[line][0].count(years[0])
-        count2= anni_zero_mesi_uno[line][0].count(years[1])
+    count1= anni_zero_mesi_uno.count(years[0])                                          #controllo che gli anni richiesti siano presenti in time_series
+    count2= anni_zero_mesi_uno.count(years[1])
 
     if count1 or count2 == 0:
         raise ExamException("Gli anni inseriti non sono presenti nella timeseries")
@@ -151,11 +147,11 @@ def detect_similar_monthly_variations(time_series, years):
     differenza_passeggeri1 = []
     differenza_passeggeri2 = []
  
-    for element in range (len(membro1)-2):                                                 #inserisco nella lista la differenza tra i passeggeri
-            differenza_passeggeri1.append(membro1[element]-membro1[element+1])
+    for element in range (0,len(membro1)-2):                                                 #inserisco nella lista la differenza tra i passeggeri
+            differenza_passeggeri1.append(abs(membro1[element]-membro1[element+1]))
 
-    for element in range (len(membro2)-1):
-            differenza_passeggeri2.append(membro2[element]-membro2[element+1])
+    for element in range (0,len(membro2)-1):
+            differenza_passeggeri2.append(abs(membro2[element]-membro2[element+1]))
 
     result = []
     for element in membro1:                                                                 #se uno dei membri considerati è none o la differenza è maggiore di 2 metto false
